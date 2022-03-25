@@ -12,11 +12,13 @@ Use the new version lmon16n.c as base.
 http://nmon.sourceforge.net/pmwiki.php?n=Site.CompilingNmon
 1. Download the lmon.c and the makefile
 2. Install the GCC C Compiler, ncurses development library and (if its not already available) Install the make command
-  Debian / Ubuntu
+> Debian / Ubuntu
+```bash
     sudo apt-get update
     sudo apt-get install gcc*
     sudo apt-get install ncurses-dev*
     sudo apt-get install make
+```
 3. Run make and you have a new version in roughly 4 seconds. Ready to run.
 
 reference: https://nanxiao.gitbooks.io/read-nmon-code-to-learn-analyzing-linux-performan/content/posts/nvidia-gpu-status.html
