@@ -1,3 +1,15 @@
+# Change from the original fork:
+
+Press 'a' or 'E' can show GPU status screen:
+
+Use the new version lmon16n.c as base.
+1. Fix CPU-wide view numbering issue (0-63,64-127). Not create a new row for 128-192 if you have 128 thread CPU.
+2. Increase the max columns. (It seems not very useful.)
+3. Improve GPU display with GPU-MHz.
+4. Add the new makefile for ubuntu 18.04.
+
+reference: https://nanxiao.gitbooks.io/read-nmon-code-to-learn-analyzing-linux-performan/content/posts/nvidia-gpu-status.html
+
 # nmon_gpu
 
 This is Nigel Griffiths' `nmon` and `nmonchart` utilities updated for monitoring GPU memory.
