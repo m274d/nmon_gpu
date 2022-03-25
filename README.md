@@ -26,7 +26,7 @@ reference: https://nanxiao.gitbooks.io/read-nmon-code-to-learn-analyzing-linux-p
 ## Use on ubuntu 18.04
 ```bash
 mv nmon_AMD64_ubuntu1804 nmon-gpu
-NMON=aCdknt. ./nmon-gpu
+NMON=aCdknt. /home/nmon-gpu/nmon-gpu
 ```
 
 
