@@ -8,7 +8,7 @@ Use the new version lmon16n.c as base.
 3. Improve GPU display with GPU-MHz.
 4. Add the new makefile for ubuntu 18.04.
 
-## compile and use on ubuntu 18.04
+## Compile on ubuntu 18.04
 http://nmon.sourceforge.net/pmwiki.php?n=Site.CompilingNmon
 1. Download the lmon.c and the makefile
 2. Install the GCC C Compiler, ncurses development library and (if its not already available) Install the make command
@@ -22,6 +22,13 @@ http://nmon.sourceforge.net/pmwiki.php?n=Site.CompilingNmon
 3. Run make and you have a new version in roughly 4 seconds. Ready to run.
 
 reference: https://nanxiao.gitbooks.io/read-nmon-code-to-learn-analyzing-linux-performan/content/posts/nvidia-gpu-status.html
+
+## Use on ubuntu 18.04
+```bash
+mv nmon_AMD64_ubuntu1804 nmon-gpu
+NMON=aCdknt. ./nmon-gpu
+```
+
 
 # nmon_gpu
 
