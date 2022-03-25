@@ -46,7 +46,7 @@ PRE_KERNEL_2_6_18 1 kernel levels before removed the following to the disk stats
 #define RAW(member)      (long)((long)(p->cpuN[i].member)   - (long)(q->cpuN[i].member))
 #define RAWTOTAL(member) (long)((long)(p->cpu_total.member) - (long)(q->cpu_total.member))
 
-#define VERSION "16j.dw"
+#define VERSION "16n-gpu"
 char version[] = VERSION;
 static char *SccsId = "nmon " VERSION;
 
@@ -1128,7 +1128,7 @@ struct nfs_stat {
 
 #define NETMAX 32
 struct net_stat {
-    unsigned long if_name[17];
+    unsigned char if_name[17];
     unsigned long long if_ibytes;
     unsigned long long if_obytes;
     unsigned long long if_ipackets;
@@ -1236,12 +1236,12 @@ R7=0x1000000040004
     long entitled_memory_pool_size;	/* AMS whole pool size in bytes */
     long entitled_memory_loan_request;	/* AMS requesting more memory loaning */
 
+    long DedDonMode;
 #ifdef EXPERIMENTAL
 /* new data in SLES11 for POWER 2.6.27 (may be a little earlier too) */
     long DesEntCap;
     long DesProcs;
     long DesVarCapWt;
-    long DedDonMode;
     long group;
     long pool;
     long entitled_memory;
@@ -1255,8 +1255,8 @@ R7=0x1000000040004
 
 int lpar_count = 0;
 
-#define LPAR_LINE_MAX   100	/* MAGIC COOKIE WARNING */
-#define LPAR_LINE_WIDTH 80
+#define LPAR_LINE_MAX   250	/* MAGIC COOKIE WARNING */
+#define LPAR_LINE_WIDTH 500
 char lpar_buffer[LPAR_LINE_MAX][LPAR_LINE_WIDTH];
 
 int lpar_sanity = 55;
@@ -1433,11 +1433,11 @@ int proc_lparcfg()
 	GETDATA(entitled_memory_loan_request);	/* AMS requesting more memory loaning */
 
     }
+    GETDATA(DedDonMode);
 #ifdef EXPERIMENTAL
     GETDATA(DesEntCap);
     GETDATA(DesProcs);
     GETDATA(DesVarCapWt);
-    GETDATA(DedDonMode);
     GETDATA(group);
     GETDATA(pool);
     GETDATA(entitled_memory);
@@ -1456,7 +1456,7 @@ int diskmax = DISKMIN;
 
 /* Supports up to 780, but not POWER6 595 follow-up with POWER7 */
 /* XXXX needs rework to cope to with fairly rare but interesting higher numbers of CPU machines */
-#define CPUMAX (192 * 8)	/* MAGIC COOKIE WARNING */
+#define CPUMAX (240 * 8)	/* MAGIC COOKIE WARNING */
 
 struct data {
     struct dsk_stat *dk;
@@ -4043,8 +4043,22 @@ int getprocs(int records)
 
 /* --- */
 
-char cpu_line[] =
-    "---------------------------+-------------------------------------------------+";
+const char cpu_line[] = "---------------------------+-------------------------------------------------+";
+
+const char wide1[]       = "100%%-+--------+---------+---------+---------+---------+---------+-----+100%%";
+const char wide2[]       = " 90%%-|                                                                |-90%%";
+const char wide3[]       = " 80%%-|                                                                |-80%%";
+const char wide4[]       = " 70%%-|                                                                |-70%%";
+const char wide5[]       = " 60%%-|                                                                |-60%%";
+const char wide6[]       = " 50%%-|                                                                |-50%%";
+const char wide7[]       = " 40%%-|                                                                |-40%%";
+const char wide8[]       = " 30%%-|                                                                |-30%%";
+const char wide9[]       = " 20%%-|                                                                |-20%%";
+const char wide10[]      = " 10%%-|                                                                |-10%%";
+const char wide_1_64[]   = " CPU +1--------+10-------+20-------+30-------+40-------+50-------+60--+--0%%";
+const char wide_65_128[] = " CPU +65---+70-------+80-------+90-------+100------+110------+120-----+--0%%";
+const char wide_129_192[]= " CPU +129--------+140------+150------+160------+170------+180------+190--0%%";
+
 /* Start process as specified in cmd in a child process without waiting
  * for completion
  * not sure if want to prevent this funcitonality for root user
@@ -4258,7 +4272,7 @@ int main(int argc, char **argv)
 
 
 #define MAXROWS 256
-#define MAXCOLS 150		/* changed to allow maximum column widths */
+#define MAXCOLS 512		/* changed to allow maximum column widths */
 #define BANNER(pad,string) {mvwhline(pad, 0, 0, ACS_HLINE,COLS-2); \
                                         wmove(pad,0,0); \
                                         wattron(pad,A_STANDOUT); \
@@ -4377,7 +4391,7 @@ int main(int argc, char **argv)
 	    break;
 	case 'C':		/* commandlist argument */
 	    cmdlist[0] = MALLOC(strlen(optarg) + 1);	/* create buffer */
-	    strncpy(cmdlist[0], optarg, strlen(optarg) + 1);
+	    strcpy(cmdlist[0], optarg);
 	    if (cmdlist[0][0] != 0)
 		cmdfound = 1;
 	    for (i = 0, j = 1; cmdlist[0][i] != 0; i++) {
@@ -4405,7 +4419,7 @@ int main(int argc, char **argv)
 	    break;
 	case 'F':		/* background mode with user supplied filename */
 	    user_filename = MALLOC(strlen(optarg) + 1);
-	    strncpy(user_filename, optarg, strlen(optarg) + 1);
+	    strcpy(user_filename, optarg);
 	    user_filename_set++;
 	    go_background(288, 300);
 	    break;
@@ -4672,7 +4686,7 @@ int main(int argc, char **argv)
 	}
 	else if (user_filename_set && user_filename != 0) {
 	    open_filename = MALLOC(strlen(user_filename) + 1);
-	    strncpy(open_filename, user_filename, strlen(user_filename) + 1);
+	    strcpy(open_filename, user_filename);
 	}
 	else {
 	    open_filename = MALLOC(strlen(hostname) + 64);
@@ -4895,7 +4909,7 @@ int main(int argc, char **argv)
 	    jfs_load(UNLOAD);
 	}
 #ifdef POWER
-	if (proc_lparcfg() && lparcfg.shared_processor_mode != 0
+	if (proc_lparcfg() && (lparcfg.shared_processor_mode != 0 || lparcfg.DedDonMode > 0)
 	    && power_vm_type == VM_POWERVM) {
 	    fprintf(fp,
 		    "LPAR,Shared CPU LPAR Stats %s,PhysicalCPU,capped,shared_processor_mode,system_potential_processors,system_active_processors,pool_capacity,MinEntCap,partition_entitled_capacity,partition_max_entitled_capacity,MinProcs,Logical CPU,partition_active_processors,partition_potential_processors,capacity_weight,unallocated_capacity_weight,BoundThrds,MinMem,unallocated_capacity,pool_idle_time,smt_mode\n",
@@ -5090,7 +5104,7 @@ int main(int argc, char **argv)
 			  " nmon -h  - full details");
 		mvwprintw(padwelcome, x + 5, 40,
 			  "To stop nmon type q to Quit");
-		COLOUR wattrset(padwelcome, COLOR_PAIR(2)); // was 1 (red)
+		COLOUR wattrset(padwelcome, COLOR_PAIR(1));
 #ifdef POWER 
 		get_cpu_cnt();
 		proc_read(P_CPUINFO);
@@ -5239,9 +5253,9 @@ int main(int argc, char **argv)
 		    mvwprintw(padwelcome, x + 12, 20, "VirtualCPUs =%d", cpus);
 #endif /* ARM */
 		}
-		    mvwprintw(padwelcome, x + 10, 42, "lscpu: CPU=%d %s", lscpu.cpus, lscpu.byte_order);
-		    mvwprintw(padwelcome, x + 11, 42, "       Sockets=%d Cores=%d Thrds=%d", lscpu.sockets, lscpu.cores, lscpu.threads);
-		    mvwprintw(padwelcome, x + 12, 42, "       MHz=%d max=%d min=%d", lscpu.mhz, lscpu.mhz_max, lscpu.mhz_min);
+		    mvwprintw(padwelcome, x + 10, 42, "lscpu:CPU=%d %s", lscpu.cpus, lscpu.byte_order);
+		    mvwprintw(padwelcome, x + 11, 42, "      Sockets=%d Cores=%d Thrds=%d", lscpu.sockets, lscpu.cores, lscpu.threads);
+		    mvwprintw(padwelcome, x + 12, 42, "      MHz=%d max=%d min=%d", lscpu.mhz, lscpu.mhz_max, lscpu.mhz_min);
 
 	
 #endif
@@ -5301,7 +5315,7 @@ int main(int argc, char **argv)
 		      "k = Kernel stats & loadavg            | j = Filesystem Usage J=reduced");
 	    mvwprintw(padhelp, 8, 1, "M = MHz by thread & CPU");
 #ifdef NVIDIA_GPU
-	    mvwprintw(padhelp, 8, 39, "| a = Accelerator NVIDIA GPU ");
+	    mvwprintw(padhelp, 8, 39, "| a = Accelerator Nvidia GPU ");
 #else				/*NVIDIA_GPU */
 #ifdef POWER
 	    mvwprintw(padhelp, 8, 39, "| p = if(PowerVM) LPAR details");
@@ -5703,27 +5717,6 @@ int main(int argc, char **argv)
 		if (cursed) {
 		    int rows = 0;
 		    BANNER(padwide, "CPU Utilisation Wide View");
-		    char *wide1 =
-			"100%%-+--------+---------+---------+---------+---------+---------+-----+100%%";
-		    char *wide2 =
-			" 90%%-|                                                                |-90%%";
-		    char *wide3 =
-			" 80%%-|                                                                |-80%%";
-		    char *wide4 =
-			" 70%%-|                                                                |-70%%";
-		    char *wide5 =
-			" 60%%-|                                                                |-60%%";
-		    char *wide6 =
-			" 50%%-|                                                                |-50%%";
-		    char *wide7 =
-			" 40%%-|                                                                |-40%%";
-		    char *wide8 =
-			" 30%%-|                                                                |-30%%";
-		    char *wide9 =
-			" 20%%-|                                                                |-20%%";
-		    char *wide10 =
-			" 10%%-|                                                                |-10%%";
-
 		    mvwprintw(padwide, 1, 0, wide1);
 		    mvwprintw(padwide, 2, 0, wide2);
 		    mvwprintw(padwide, 3, 0, wide3);
@@ -5734,8 +5727,7 @@ int main(int argc, char **argv)
 		    mvwprintw(padwide, 8, 0, wide8);
 		    mvwprintw(padwide, 9, 0, wide9);
 		    mvwprintw(padwide, 10, 0, wide10);
-		    mvwprintw(padwide, 11, 0,
-			      " CPU +1--------+10-------+20-------+30-------+40-------+50-------+60--+--0%%");
+		    mvwprintw(padwide, 11, 0, wide_1_64);
 		    mvwprintw(padwide, 1, 6, "CPU(s)=%d", cpus);
 		    if (wide_first_time) {
 			mvwprintw(padwide, 3, 7,
@@ -5769,12 +5761,12 @@ int main(int argc, char **argv)
 			    if (5.1 <= cpu_sum && cpu_sum < 10.0)
 				mvwprintw(padwide, 10, 6 + i, "o");
 			}
-			if (cpus < 64)
+			if (cpus < 65)
 			    for (j = 2; j <= 10; j++)
 				mvwprintw(padwide, j, 6 + i, "|");
 			rows = 12;
 		    }
-		    if (cpus > 63) {
+		    if (cpus > 64) {
 			mvwprintw(padwide, rows + 0, 0, wide1);
 			mvwprintw(padwide, rows + 1, 0, wide2);
 			mvwprintw(padwide, rows + 2, 0, wide3);
@@ -5785,8 +5777,7 @@ int main(int argc, char **argv)
 			mvwprintw(padwide, rows + 7, 0, wide8);
 			mvwprintw(padwide, rows + 8, 0, wide9);
 			mvwprintw(padwide, rows + 9, 0, wide10);
-			mvwprintw(padwide, rows + 10, 0,
-				  " CPU +65---+70-------+80-------+90-------+100------+110------+120-----+--0%%");
+			mvwprintw(padwide, rows + 10, 0, wide_65_128);
 			if (wide_first_time) {
 			    mvwprintw(padwide, rows + 3, 7,
 				      " Please wait gathering CPU statistics");
@@ -5824,7 +5815,7 @@ int main(int argc, char **argv)
 					      6 + i - 64, "o");
 			    }
 
-			    if (cpus < 128)
+			    if (cpus < 129)
 				COLOUR wattrset(padwide, COLOR_PAIR(4));	/* blue */
 			    for (j = rows; j <= rows + 9; j++)
 				mvwprintw(padwide, j, 6 + i - 64, "<");
@@ -5832,7 +5823,7 @@ int main(int argc, char **argv)
 			}
 			rows = 23;
 		    }
-		    if (cpus > 127) {
+		    if (cpus > 128) {
 			mvwprintw(padwide, rows + 0, 0, wide1);
 			mvwprintw(padwide, rows + 1, 0, wide2);
 			mvwprintw(padwide, rows + 2, 0, wide3);
@@ -5843,8 +5834,7 @@ int main(int argc, char **argv)
 			mvwprintw(padwide, rows + 7, 0, wide8);
 			mvwprintw(padwide, rows + 8, 0, wide9);
 			mvwprintw(padwide, rows + 9, 0, wide10);
-			mvwprintw(padwide, rows + 10, 0,
-				  " CPU +129--------+140------+150------+160------+170------+180------+190--0%%");
+			mvwprintw(padwide, rows + 10, 0,wide_129_192);
 			if (wide_first_time) {
 			    mvwprintw(padwide, rows + 3, 7,
 				      " Please wait gathering CPU statistics");
@@ -6156,9 +6146,9 @@ int main(int argc, char **argv)
 		DISPLAY(padlpar, 10);
 	    } else {
 		/* Only print LPAR info to spreadsheet if in shared processor mode */
-		if (ret != 0 && lparcfg.shared_processor_mode > 0
+		if (ret != 0 && (lparcfg.shared_processor_mode > 0 || lparcfg.DedDonMode > 0)
 		    && power_vm_type == VM_POWERVM)
-		    fprintf(fp, "LPAR,%s,%9.6f,%d,%d,%d,%d,%d,%.2f,%.2f,%.2f,%d,%d,%d,%d,%d,%d,%d,%d,%d,%.2f,%d\n", LOOP, (double) lparcfg.purr_diff / (double) lparcfg.timebase / elapsed, lparcfg.capped, lparcfg.shared_processor_mode, lparcfg.system_potential_processors, lparcfg.system_active_processors, lparcfg.pool_capacity, lparcfg.MinEntCap / 100.0, lparcfg.partition_entitled_capacity / 100.0, lparcfg.partition_max_entitled_capacity / 100.0, lparcfg.MinProcs, cpus,	/* report logical CPU here so analyser graph CPU% vs VPs reports correctly */
+		    fprintf(fp, "LPAR,%s,%9.6f,%d,%d,%d,%d,%d,%.2f,%.2f,%.2f,%d,%d,%d,%d,%d,%d,%d,%d,%d,%.2f,%d\n", LOOP, (double) lparcfg.purr_diff / (double) lparcfg.timebase / elapsed, lparcfg.capped, lparcfg.shared_processor_mode, lparcfg.system_potential_processors, lparcfg.system_active_processors, lparcfg.pool_capacity /100, lparcfg.MinEntCap / 100.0, lparcfg.partition_entitled_capacity / 100.0, lparcfg.partition_max_entitled_capacity / 100.0, lparcfg.MinProcs, cpus,	/* report logical CPU here so analyser graph CPU% vs VPs reports correctly */
 			    lparcfg.partition_active_processors,
 			    lparcfg.partition_potential_processors,
 			    lparcfg.capacity_weight,
@@ -6199,7 +6189,7 @@ int main(int argc, char **argv)
 		    (gpu_device[i], NVML_CLOCK_GRAPHICS,
 		     &gpu_clock[i]) != NVML_SUCCESS)
 		    gpu_clock[i] = 999;
-		if (nvmlDeviceGetMemoryInfo
+        if (nvmlDeviceGetMemoryInfo
 		    (gpu_device[i],
 		     &gpu_memory[i]) != NVML_SUCCESS) {
 		    gpu_memory[i].total = 0;
@@ -6217,38 +6207,42 @@ int main(int argc, char **argv)
 
 		mvwprintw(padgpu, 2, 1, "GPU");
 		mvwprintw(padgpu, 3, 1, "No.");
+        COLOUR wattrset(padgpu, COLOR_PAIR(1));
+		mvwprintw(padgpu, 3, 6, "GPU-MHz");
 		COLOUR wattrset(padgpu, COLOR_PAIR(2));
-        mvwprintw(padgpu, 2, 6, "Memory");
-		mvwprintw(padgpu, 3, 6, "MiB");
+        mvwprintw(padgpu, 2, 6+8, "Memory");
+		mvwprintw(padgpu, 3, 6+8, "MiB");
 		COLOUR wattrset(padgpu, COLOR_PAIR(3));
-		mvwprintw(padgpu, 2, 19, "GPU-Util");
-		mvwprintw(padgpu, 3, 19, "Proc Memory");
+		mvwprintw(padgpu, 2, 19+8, "GPU-Util");
+		mvwprintw(padgpu, 3, 19+8, "Proc Memory");
 		COLOUR wattrset(padgpu, COLOR_PAIR(1));
-		mvwprintw(padgpu, 2, 31, "Temp");
-		mvwprintw(padgpu, 3, 31, " °C");
+		mvwprintw(padgpu, 2, 31+8, "Temp");
+		mvwprintw(padgpu, 3, 31+8, " °C");
 		COLOUR wattrset(padgpu, COLOR_PAIR(5));
-		mvwprintw(padgpu, 2, 41, "Power");
-		mvwprintw(padgpu, 3, 41, "Watts");
+		mvwprintw(padgpu, 2, 38+8, "Power");
+		mvwprintw(padgpu, 3, 38+8, " Watts");
 		COLOUR wattrset(padgpu, COLOR_PAIR(0));
-		mvwprintw(padgpu, 3, 50, "Name");
+		mvwprintw(padgpu, 3, 46+8, " Name");
 
 		for (i = 0; i < gpu_devices; i++) {
 		    mvwprintw(padgpu, 4 + i, 1, "%2d", i);
+		    COLOUR wattrset(padgpu, COLOR_PAIR(1));
+		    mvwprintw(padgpu, 4 + i, 6, "%7d", (int) gpu_clock[i]);
 		    COLOUR wattrset(padgpu, COLOR_PAIR(2));
             long gpu_mem_used = (long)(gpu_memory[i].used)/(1024L*1024L);
             long gpu_mem_total = (long)(gpu_memory[i].total)/(1024L*1024L);
-		    mvwprintw(padgpu, 4 + i, 6, "%5d/%d", (int)gpu_mem_used, (int)gpu_mem_total);
+		    mvwprintw(padgpu, 4 + i, 6+8, "%5d/%d", (int)gpu_mem_used, (int)gpu_mem_total);
 		    COLOUR wattrset(padgpu, COLOR_PAIR(3));
-		    mvwprintw(padgpu, 4 + i, 19, "%3d%% %3d%%",
+		    mvwprintw(padgpu, 4 + i, 19+8, "%3d%% %3d%%",
 			      (int) gpu_util[i].gpu,
 			      (int) gpu_util[i].memory);
 		    COLOUR wattrset(padgpu, COLOR_PAIR(1));
-		    mvwprintw(padgpu, 4 + i, 31, "%3d", (int) gpu_temp[i]);
+		    mvwprintw(padgpu, 4 + i, 31+8, "%3d", (int)gpu_temp[i]);
 		    COLOUR wattrset(padgpu, COLOR_PAIR(5));
-		    mvwprintw(padgpu, 4 + i, 39, "%7.2f",
+		    mvwprintw(padgpu, 4 + i, 36+8, "%7.2f",
 			      (int) gpu_watts[i] / 1000.0);
 		    COLOUR wattrset(padgpu, COLOR_PAIR(0));
-		    mvwprintw(padgpu, 4 + i, 50, "%-s", &gpu_name[i][0]);
+		    mvwprintw(padgpu, 4 + i, 46+8, "%-s", &gpu_name[i][0]);
 		}
 		DISPLAY(padgpu, (4+gpu_devices)); // was hardcoded at 8
 	    } else {
@@ -6430,7 +6424,7 @@ int main(int argc, char **argv)
 		BANNER(padmem, "Memory and Swap");
 
 		COLOUR wattrset(padmem, COLOR_PAIR(1));
-		mvwprintw(padmem, 1, 1, "PageSize:%dKB", pagesize / 1024);
+		mvwprintw(padmem, 1, 1, "PageSize:%luKB", pagesize / 1024);
 		COLOUR wattrset(padmem, COLOR_PAIR(0));
 		mvwprintw(padmem, 2, 1, "Total (MB)");
 		mvwprintw(padmem, 3, 1, "Free  (MB)");
@@ -6924,7 +6918,7 @@ int main(int argc, char **argv)
 		else
 		    mvwprintw(padker, 5, BOOTCOL, "Uptime has overflowed");
 		mvwprintw(padker, 7, BOOTCOL, "%d CPU core threads", cpus);
-		mvwprintw(padker, 9, BOOTCOL, "Boot time %d", boottime);
+		mvwprintw(padker, 9, BOOTCOL, "Boot time %lld", boottime);
 		mvwprintw(padker,10, BOOTCOL, "%s", boottime_str);
 		COLOUR wattrset(padker, COLOR_PAIR(0));
 		DISPLAY(padker, 11);
@@ -6935,24 +6929,25 @@ int main(int argc, char **argv)
 		    proc_first_time = 0;
 		}
 		if (show_rrd)
-		    str_p =
+		    str_p =                    /*   LOOP    1    2    3    4    5    6    7    8    9 */
 			"rrdtool update proc.rrd %s:%.0f:%.0f:%.1f:%.1f:%.1f:%.1f:%.1f:%.1f:%.1f:%.1f\n";
 		else
-		    str_p =
+		    str_p = /*   LOOP    1    2    3    4    5    6    7    8    9 */
 			"PROC,%s,%.0f,%.0f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f\n";
 
 		/* These "-1"'s looks bad but it keeps the nmon for AIX format */
 		/* The stats are not available in Linux . . .  unless you know better! */
-		fprintf(fp, str_p, LOOP, (float) p->cpu_total.running,	/*runqueue */
-			(float) p->cpu_total.blocked,	/*swapin (# of processes waiting for IO completion */
-			/*pswitch */
-			(float) (p->cpu_total.ctxt - q->cpu_total.ctxt) / elapsed, -1.0,	/*syscall */
-			-1.0,	/*read */
-			-1.0,	/*write */
-			/*fork */
-			(float) (p->cpu_total.procs - q->cpu_total.procs) / elapsed, -1.0,	/*exec */
-			-1.0,	/*sem */
-			-1.0);	/*msg */
+		fprintf(fp, str_p, LOOP, 
+			(float) p->cpu_total.running,	/*1 runqueue */
+			(float) p->cpu_total.blocked,	/*2 swapin (# of processes waiting for IO completion */
+			(float) (p->cpu_total.ctxt - q->cpu_total.ctxt) / elapsed, /*3 pswitch */
+			-1.0,	/*4 syscall */
+			-1.0,	/*4 read */
+			-1.0,	/*5 write */
+			(float) (p->cpu_total.procs - q->cpu_total.procs) / elapsed, /*6 fork */
+			-1.0,	/*7 exec */
+			-1.0,	/*8 sem */
+			-1.0);	/*9 msg */
 	    }
 	}
 
@@ -7701,7 +7696,7 @@ I/F Name Recv=KB/s Trans=KB/s packin packout insize outsize Peak->Recv Trans
 				      disk_busy_peak[i],
 				      disk_rate_peak[i]);
 			    COLOUR wattrset(paddisk, COLOR_PAIR(3));
-			    mvwprintw(paddisk, 2 + k, 70, "%3d", p->dk[i].dk_inflight);
+			    mvwprintw(paddisk, 2 + k, 70, "%3ld", p->dk[i].dk_inflight);
 			    COLOUR wattrset(paddisk, COLOR_PAIR(0));
 			    k++;
 			}
@@ -8258,7 +8253,7 @@ I/F Name Recv=KB/s Trans=KB/s packin packout insize outsize Peak->Recv Trans
 					p->procs[i].pi_ppid, 
 					pgrp);
 			COLOUR wattrset(padtop, COLOR_PAIR(5));
-			mvwprintw(padtop, j + 2 - skipped, 24, "%4d %4d",
+			mvwprintw(padtop, j + 2 - skipped, 24, "%4ld %4ld",
 					p->procs[i].pi_nice,
 					p->procs[i].pi_pri);
 			if (topper[j].time * 100 / elapsed) {
@@ -8270,7 +8265,7 @@ I/F Name Recv=KB/s Trans=KB/s packin packout insize outsize Peak->Recv Trans
 					(topper[j].time * 100 / elapsed) ? "Running " : get_state(p->procs[i].pi_state));
 
 			COLOUR wattrset(padtop, COLOR_PAIR(6));
-			mvwprintw(padtop, j + 2 - skipped, 45, "0x%08x",
+			mvwprintw(padtop, j + 2 - skipped, 45, "0x%08lx",
 					p->procs[i].pi_flags);
 			COLOUR wattrset(padtop, COLOR_PAIR(1));
 			mvwprintw(padtop, j + 2 - skipped, 54, "%1s",
@@ -8303,7 +8298,7 @@ I/F Name Recv=KB/s Trans=KB/s packin packout insize outsize Peak->Recv Trans
 			    formatstring =
 				"  PID    %%CPU  Size   Res   Res   Res   Res Shared   Faults  Command";
 		    }
-		    CURSE mvwprintw(padtop, 1, y, formatstring);
+		    CURSE mvwprintw(padtop, 1, y, "%s", formatstring);
 
 		    if (show_args == ARGS_ONLY) {
 			formatstring =
@@ -8323,7 +8318,7 @@ I/F Name Recv=KB/s Trans=KB/s packin packout insize outsize Peak->Recv Trans
 			    formatstring =
 				"         Used    KB   Set  Text  Data   Lib    KB  Min  Maj ";
 		    }
-		    CURSE mvwprintw(padtop, 2, 1, formatstring);
+		    CURSE mvwprintw(padtop, 2, 1, "%s", formatstring);
 		    for (j = 0; j < max_sorted; j++) {
 			i = topper[j].index;
 			if (!show_all) {
