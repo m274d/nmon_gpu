@@ -12,7 +12,7 @@ Use the new version lmon16n.c as base.
 http://nmon.sourceforge.net/pmwiki.php?n=Site.CompilingNmon
 1. Download the lmon.c and the makefile
 2. Install the GCC C Compiler, ncurses development library and (if its not already available) Install the make command
-> Debian / Ubuntu
+- Debian / Ubuntu
 ```bash
     sudo apt-get update
     sudo apt-get install gcc*
